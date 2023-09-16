@@ -15,7 +15,8 @@ from encoder import Encoder
 from decoder import Decoder
 from model import ED
 from net_params import convlstm_encoder_params, convlstm_decoder_params, convgru_encoder_params, convgru_decoder_params
-from data.mm import MovingMNIST
+# from data.mm import MovingMNIST
+from data.nc import NcDataset
 import torch
 from torch import nn
 from torch.optim import lr_scheduler
@@ -27,7 +28,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2020-03-09T00-00-00"
+TIMESTAMP = "2023-09-15T00-00-00"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -38,20 +39,22 @@ parser.add_argument('-cgru',
                     help='use convgru as base cell',
                     action='store_true')
 parser.add_argument('--batch_size',
-                    default=4,
+                    default=10,
                     type=int,
                     help='mini-batch size')
-parser.add_argument('-lr', default=1e-4, type=float, help='G learning rate')
+parser.add_argument('-lr', default=1e-2, type=float, help='G learning rate')
 parser.add_argument('-frames_input',
-                    default=10,
+                    default=6,
                     type=int,
                     help='sum of input frames')
 parser.add_argument('-frames_output',
-                    default=10,
+                    default=6,
                     type=int,
                     help='sum of predict frames')
-parser.add_argument('-epochs', default=500, type=int, help='sum of epochs')
+parser.add_argument('-epochs', default=10, type=int, help='sum of epochs')
 args = parser.parse_args()
+
+print(args)
 
 random_seed = 1996
 np.random.seed(random_seed)
@@ -65,16 +68,25 @@ torch.backends.cudnn.benchmark = False
 
 save_dir = './save_model/' + TIMESTAMP
 
-trainFolder = MovingMNIST(is_train=True,
-                          root='data/',
-                          n_frames_input=args.frames_input,
-                          n_frames_output=args.frames_output,
-                          num_objects=[3])
-validFolder = MovingMNIST(is_train=False,
-                          root='data/',
-                          n_frames_input=args.frames_input,
-                          n_frames_output=args.frames_output,
-                          num_objects=[3])
+# trainFolder = MovingMNIST(is_train=True,
+#                           root='data/',
+#                           n_frames_input=args.frames_input,
+#                           n_frames_output=args.frames_output,
+#                           num_objects=[3])
+# validFolder = MovingMNIST(is_train=False,
+#                           root='data/',
+#                           n_frames_input=args.frames_input,
+#                           n_frames_output=args.frames_output,
+#                           num_objects=[3])
+
+trainFolder = NcDataset(is_train=True,
+                        root='data/',
+                        n_frames_input=args.frames_input,
+                        n_frames_output=args.frames_output)
+validFolder = NcDataset(is_train=False,
+                        root='data/',
+                        n_frames_input=args.frames_input,
+                        n_frames_output=args.frames_output)
 trainLoader = torch.utils.data.DataLoader(trainFolder,
                                           batch_size=args.batch_size,
                                           shuffle=False)
@@ -145,7 +157,10 @@ def train():
         # train the model #
         ###################
         t = tqdm(trainLoader, leave=False, total=len(trainLoader))
-        for i, (idx, targetVar, inputVar, _, _) in enumerate(t):
+        # for i, (idx, targetVar, inputVar, _, _) in enumerate(t):
+        for i, (idx, targetVar, inputVar) in enumerate(t):
+            if i == 0:
+                print(inputVar.shape)
             inputs = inputVar.to(device)  # B,S,C,H,W
             label = targetVar.to(device)  # B,S,C,H,W
             optimizer.zero_grad()
@@ -168,7 +183,8 @@ def train():
         with torch.no_grad():
             net.eval()
             t = tqdm(validLoader, leave=False, total=len(validLoader))
-            for i, (idx, targetVar, inputVar, _, _) in enumerate(t):
+            # for i, (idx, targetVar, inputVar, _, _) in enumerate(t):
+            for i, (idx, targetVar, inputVar) in enumerate(t):
                 if i == 3000:
                     break
                 inputs = inputVar.to(device)
