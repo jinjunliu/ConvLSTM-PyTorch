@@ -156,3 +156,29 @@ class MovingMNIST(data.Dataset):
 
     def __len__(self):
         return self.length
+    
+
+if __name__ == "__main__":
+    trainFolder = MovingMNIST(is_train=True,
+                                root='./',
+                                n_frames_input=10,
+                                n_frames_output=10,
+                                num_objects=[3])
+    validFolder = MovingMNIST(is_train=False,
+                                root='./',
+                                n_frames_input=10,
+                                n_frames_output=10,
+                                num_objects=[3])
+    trainLoader = torch.utils.data.DataLoader(trainFolder,
+                                                batch_size=8,
+                                                shuffle=False)
+    validLoader = torch.utils.data.DataLoader(validFolder,
+                                                batch_size=8,
+                                                shuffle=False)
+    for i, (idx, output, input, frozen, _) in enumerate(trainLoader):
+        print(i)
+        print(idx)
+        print(output.size())
+        print(input.size())
+        print(frozen.size())
+        break
