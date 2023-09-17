@@ -28,7 +28,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2023-09-15T00-00-00"
+TIMESTAMP = "2023-09-16T00-00-00"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
