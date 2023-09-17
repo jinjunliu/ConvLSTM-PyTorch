@@ -1,4 +1,4 @@
 *.nc
 __pycache__
 runs/*
-save_model/*
+save_model
