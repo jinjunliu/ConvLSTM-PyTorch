@@ -92,3 +92,9 @@ if __name__ == "__main__":
         print(output.size())
         print(input.size())
         break
+    for i, (idx, output, input) in enumerate(validLoader):
+        print(i)
+        print(idx)
+        print(output.size())
+        print(input.size())
+        break
