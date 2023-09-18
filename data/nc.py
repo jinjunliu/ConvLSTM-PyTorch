@@ -10,7 +10,7 @@ def load_nc_data(root):
     Returns:
         data: a xr.dataarray of shape (1590, 64, 64)
     """
-    data_file = root + 'saved_aod_2023_interp.nc'
+    data_file = root + 'saved_aod_2023_interp_cubic.nc'
     var_name = 'aod'
     with xr.open_dataset(data_file) as data:
         data = data[var_name]
@@ -21,7 +21,7 @@ def split_data(data, is_train):
     """split data into training, validation and testing sets
 
     Args:
-        data: a xr.dataarray of shape (1590, 64, 64)
+        data: a xr.dataarray of shape (13224, 64, 64)
         is_train: a boolean indicating whether to split training set or not
 
     Returns:
@@ -31,12 +31,12 @@ def split_data(data, is_train):
         test_data: a numpy array
     """
     if is_train:
-        train_data = data.values[:9600,:,:]
+        train_data = data.values[:9600,:,:] # sample #: 9600/12 = 800
         return train_data
     else:
-        valid_data = data.values[9600:12000,:,:]
+        valid_data = data.values[9600:13200,:,:] # sample #: 3600/12 = 300
         return valid_data
-    # test_data = data.values[12000:13200,:,:]
+    # test_data = data.values[12000:13200,:,:] # sample #: 1200/12 = 100
 
 
 class NcDataset(Dataset):
@@ -59,6 +59,9 @@ class NcDataset(Dataset):
         # replace nan values with 0
         # inputs = np.nan_to_num(inputs)
         # targets = np.nan_to_num(targets)
+        # replace negative values with 0
+        inputs[inputs < 0] = 0.0
+        targets[targets < 0] = 0.0
         inputs = torch.from_numpy(inputs).permute(0, 3, 1, 2).float().contiguous()
         targets = torch.from_numpy(targets).permute(0, 3, 1, 2).float().contiguous()
         return idx, targets, inputs
