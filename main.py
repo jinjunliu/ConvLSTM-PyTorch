@@ -28,7 +28,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 
-TIMESTAMP = "2023-09-16T00-00-00"
+TIMESTAMP = "2023-09-16"
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
@@ -66,7 +66,6 @@ else:
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-save_dir = './save_model/' + TIMESTAMP
 
 # trainFolder = MovingMNIST(is_train=True,
 #                           root='data/',
@@ -97,12 +96,15 @@ validLoader = torch.utils.data.DataLoader(validFolder,
 if args.convlstm:
     encoder_params = convlstm_encoder_params
     decoder_params = convlstm_decoder_params
-if args.convgru:
+    save_dir = './save_model/' + TIMESTAMP + '_convlstm'
+elif args.convgru:
     encoder_params = convgru_encoder_params
     decoder_params = convgru_decoder_params
+    save_dir = './save_model/' + TIMESTAMP + '_convgru'
 else:
     encoder_params = convgru_encoder_params
     decoder_params = convgru_decoder_params
+    save_dir = './save_model/' + TIMESTAMP + '_convgru'
 
 
 def train():
