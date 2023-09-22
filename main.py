@@ -27,8 +27,10 @@ from tqdm import tqdm
 import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
+from datetime import datetime
 
-TIMESTAMP = "2023-09-16"
+# get the current timestamp
+TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S/}".format(datetime.now())
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
