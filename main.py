@@ -30,7 +30,7 @@ import argparse
 from datetime import datetime
 
 # get the current timestamp
-TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S/}".format(datetime.now())
+TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
 parser = argparse.ArgumentParser()
 parser.add_argument('-clstm',
                     '--convlstm',
