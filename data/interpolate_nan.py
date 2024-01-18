@@ -6,6 +6,8 @@ from scipy.interpolate import griddata
 def interp_nan():
     ds = xr.open_dataset('./saved_aod_2023.nc')
     aod = ds['aod'].values # (time, y, x)
+    # print shape
+    print(aod.shape)
     # interpolate nan values
     ntime, ny, nx = aod.shape
 
@@ -44,6 +46,6 @@ def interp_nan():
 
 if __name__ == "__main__":
     aod = interp_nan()
-    ds = xr.open_dataset('./saved_aod_2023.nc')
+    ds = xr.open_dataset('./saved_aod_20230101.nc')
     ds['aod'] = (('time', 'y', 'x'), aod)
-    ds.to_netcdf('./saved_aod_2023_interp_cubic.nc')
+    ds.to_netcdf('./saved_aod_20230101_interp_cubic.nc')
