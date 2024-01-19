@@ -3,8 +3,7 @@ import xarray as xr
 import numpy as np
 from scipy.interpolate import griddata
 
-def interp_nan():
-    ds = xr.open_dataset('./saved_aod_2023.nc')
+def interp_nan(ds):
     aod = ds['aod'].values # (time, y, x)
     # print shape
     print(aod.shape)
@@ -19,6 +18,9 @@ def interp_nan():
     for i in range(ntime):
         print("processing time step: ", i)
         aod_i = aod[i,:,:]
+        # if the frame is the last 6 frames for every 12 frames, skip
+        if i % 12 >= 6:
+            continue
         # if no nan values, skip
         if not np.isnan(aod_i).any():
             continue
@@ -45,7 +47,12 @@ def interp_nan():
 
 
 if __name__ == "__main__":
-    aod = interp_nan()
     ds = xr.open_dataset('./saved_aod_20230101.nc')
+    aod = interp_nan(ds)
     ds['aod'] = (('time', 'y', 'x'), aod)
     ds.to_netcdf('./saved_aod_20230101_interp_cubic.nc')
+
+    # check if the data in 2327 step is all nan
+    # ds = xr.open_dataset('./saved_aod_20230101.nc')
+    # aod = ds['aod'].values
+    # print(np.isnan(aod[2327,:,:]).all())
