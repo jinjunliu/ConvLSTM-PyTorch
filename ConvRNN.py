@@ -38,15 +38,17 @@ class CGRU_cell(nn.Module):
     def forward(self, inputs=None, hidden_state=None, seq_len=6):
         # seq_len=10 for moving_mnist
         if hidden_state is None:
+            # CORRECTED: Create tensor on the same device as the inputs.
             htprev = torch.zeros(inputs.size(1), self.num_features,
-                                 self.shape[0], self.shape[1]).cuda()
+                                 self.shape[0], self.shape[1], device=inputs.device)
         else:
             htprev = hidden_state
         output_inner = []
         for index in range(seq_len):
             if inputs is None:
+                # CORRECTED: Create tensor on the same device as htprev.
                 x = torch.zeros(htprev.size(0), self.input_channels,
-                                self.shape[0], self.shape[1]).cuda()
+                                self.shape[0], self.shape[1], device=htprev.device)
             else:
                 x = inputs[index, ...]
 
@@ -89,17 +91,20 @@ class CLSTM_cell(nn.Module):
     def forward(self, inputs=None, hidden_state=None, seq_len=6):
         #  seq_len=10 for moving_mnist
         if hidden_state is None:
+            # CORRECTED: Create tensors on the same device as the inputs.
+            device = inputs.device
             hx = torch.zeros(inputs.size(1), self.num_features, self.shape[0],
-                             self.shape[1]).cuda()
+                             self.shape[1], device=device)
             cx = torch.zeros(inputs.size(1), self.num_features, self.shape[0],
-                             self.shape[1]).cuda()
+                             self.shape[1], device=device)
         else:
             hx, cx = hidden_state
         output_inner = []
         for index in range(seq_len):
             if inputs is None:
+                # CORRECTED: Create tensor on the same device as hx.
                 x = torch.zeros(hx.size(0), self.input_channels, self.shape[0],
-                                self.shape[1]).cuda()
+                                self.shape[1], device=hx.device)
             else:
                 x = inputs[index, ...]
 
