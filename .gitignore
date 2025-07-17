@@ -3,3 +3,4 @@ __pycache__
 runs/*
 save_model
 *.npy
+*.onnx
