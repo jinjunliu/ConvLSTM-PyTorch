@@ -47,12 +47,12 @@ def interp_nan(ds):
 
 
 if __name__ == "__main__":
-    ds = xr.open_dataset('./saved_aod_20230101.nc')
+    ds = xr.open_dataset('./saved_aod_2023003_5.nc')
     aod = interp_nan(ds)
     ds['aod'] = (('time', 'y', 'x'), aod)
-    ds.to_netcdf('./saved_aod_20230101_interp_cubic.nc')
+    ds.to_netcdf('./saved_aod_2023003_5_interp_cubic.nc')
 
     # check if the data in 2327 step is all nan
-    # ds = xr.open_dataset('./saved_aod_20230101.nc')
+    # ds = xr.open_dataset('./saved_aod_2023003_5.nc')
     # aod = ds['aod'].values
     # print(np.isnan(aod[2327,:,:]).all())
