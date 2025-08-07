@@ -4,11 +4,11 @@ import numpy as np
 from scipy.interpolate import griddata
 
 def interp_nan(ds):
-    aod = ds['aod'].values # (time, y, x)
+    aod = ds['aod'].values # (time, x, y)
     # print shape
     print(aod.shape)
     # interpolate nan values
-    ntime, ny, nx = aod.shape
+    ntime, nx, ny = aod.shape
 
     x = np.arange(nx)
     y = np.arange(ny)
@@ -19,8 +19,8 @@ def interp_nan(ds):
         print("processing time step: ", i)
         aod_i = aod[i,:,:]
         # if the frame is the last 6 frames for every 12 frames, skip
-        if i % 12 >= 6:
-            continue
+        # if i % 12 >= 6:
+        #     continue
         # if no nan values, skip
         if not np.isnan(aod_i).any():
             continue
@@ -47,12 +47,14 @@ def interp_nan(ds):
 
 
 if __name__ == "__main__":
-    ds = xr.open_dataset('./saved_aod_2023003_5.nc')
+    ds = xr.open_dataset('./saved_aod_20230101_latlon.nc')
     aod = interp_nan(ds)
-    ds['aod'] = (('time', 'y', 'x'), aod)
-    ds.to_netcdf('./saved_aod_2023003_5_interp_cubic.nc')
+    ds['aod'].values = aod
+    # save the interpolated data
+    print("Saving the interpolated data...")
+    ds.to_netcdf('./saved_aod_20230101_latlon_interp_cubic_train.nc')
 
     # check if the data in 2327 step is all nan
-    # ds = xr.open_dataset('./saved_aod_2023003_5.nc')
+    # ds = xr.open_dataset('./saved_aod_20230101_latlon.nc')
     # aod = ds['aod'].values
     # print(np.isnan(aod[2327,:,:]).all())
