@@ -28,6 +28,7 @@ import numpy as np
 from tensorboardX import SummaryWriter
 import argparse
 from datetime import datetime
+from hybrid_loss import HybridLoss
 
 # get the current timestamp
 TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
@@ -41,7 +42,7 @@ parser.add_argument('-cgru',
                     help='use convgru as base cell',
                     action='store_true')
 parser.add_argument('--batch_size',
-                    default=10,
+                    default=5,
                     type=int,
                     help='mini-batch size')
 parser.add_argument('-lr', default=1e-2, type=float, help='G learning rate')
@@ -67,18 +68,6 @@ else:
     torch.cuda.manual_seed(random_seed)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-
-
-# trainFolder = MovingMNIST(is_train=True,
-#                           root='data/',
-#                           n_frames_input=args.frames_input,
-#                           n_frames_output=args.frames_output,
-#                           num_objects=[3])
-# validFolder = MovingMNIST(is_train=False,
-#                           root='data/',
-#                           n_frames_input=args.frames_input,
-#                           n_frames_output=args.frames_output,
-#                           num_objects=[3])
 
 trainFolder = NcDataset(is_train=True,
                         root='data/',
@@ -140,7 +129,8 @@ def train():
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         cur_epoch = 0
-    lossfunction = nn.MSELoss().cuda()
+    # lossfunction = nn.MSELoss().cuda()
+    lossfunction = HybridLoss(lambda_grad=0.2).cuda()
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     pla_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer,
                                                       factor=0.5,
