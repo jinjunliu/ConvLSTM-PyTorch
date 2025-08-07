@@ -11,7 +11,7 @@ from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
-# 导入您的自定义模块
+# Import your custom modules
 from encoder import Encoder
 from decoder import Decoder
 from model import ED
@@ -22,10 +22,10 @@ from hybrid_loss import HybridLoss
 
 def main(args):
     """
-    主函数，包含完整的训练和验证流程。
+    Main function, containing the complete training and validation pipeline.
     """
-    # 1. 设置设备 (关键修改：实现设备自适应)
-    # 自动检测 CUDA, Apple Silicon (MPS), 或 CPU
+    # 1. Set up the device (key change: adaptive device detection)
+    # Automatically detect CUDA, Apple Silicon (MPS), or CPU
     if torch.cuda.is_available():
         device = torch.device(f"cuda:{args.gpu_id}")
         print(f"Using CUDA device: {device}")
@@ -36,17 +36,17 @@ def main(args):
         device = torch.device("cpu")
         print("CUDA not found. Using CPU.")
 
-    # 2. 设置随机种子以保证实验可复现
+    # 2. Set random seed for reproducibility
     random_seed = 2025
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(random_seed)
-        # 以下两项设置可以平衡性能和可复现性
+        # The following two settings balance performance and reproducibility
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    # 3. 准备数据加载器 (DataLoader)
+    # 3. Prepare DataLoaders
     print("Loading data...")
     train_folder = NcDataset(is_train=True,
                            root='data/',
@@ -57,7 +57,7 @@ def main(args):
                            n_frames_input=args.frames_input,
                            n_frames_output=args.frames_output)
 
-    # 最佳实践：训练集需要打乱数据 (shuffle=True)
+    # Best practice: shuffle the training data (shuffle=True)
     train_loader = DataLoader(train_folder,
                               batch_size=args.batch_size,
                               shuffle=True, 
@@ -68,12 +68,12 @@ def main(args):
                               num_workers=args.num_workers)
     print("Data loaded.")
 
-    # 4. 模型选择与初始化
+    # 4. Model selection and initialization
     if args.convlstm:
         encoder_params = convlstm_encoder_params
         decoder_params = convlstm_decoder_params
         model_type = 'convlstm'
-    else:  # 默认使用 ConvGRU
+    else:  # Use ConvGRU by default
         encoder_params = convgru_encoder_params
         decoder_params = convgru_decoder_params
         model_type = 'convgru'
@@ -82,15 +82,15 @@ def main(args):
     decoder = Decoder(decoder_params[0], decoder_params[1])
     net = ED(encoder, decoder)
     
-    # 关键修改：将模型发送到已确定的设备
+    # Key change: send the model to the determined device
     net.to(device)
 
-    # 使用 DataParallel 进行多GPU训练 (仅在有多个GPU时生效)
+    # Use DataParallel for multi-GPU training (only active with multiple GPUs)
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs for training.")
         net = nn.DataParallel(net)
 
-    # 5. 设置路径和日志
+    # 5. Set up paths and logging
     timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
     save_dir = os.path.join('./save_model', f'{timestamp}_{model_type}')
     run_dir = os.path.join('./runs', f'{timestamp}_{model_type}')
@@ -100,14 +100,14 @@ def main(args):
         os.makedirs(run_dir)
     tb = SummaryWriter(run_dir)
 
-    # 6. 初始化损失函数、优化器、学习率调度器和早停
+    # 6. Initialize loss function, optimizer, learning rate scheduler, and early stopping
     loss_function = HybridLoss(lambda_grad=args.lambda_grad).to(device)
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     pla_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=4, verbose=True)
     early_stopping = EarlyStopping(patience=20, verbose=True, path=os.path.join(save_dir, 'checkpoint.pth'))
     
     cur_epoch = 0
-    # 可选：加载已存在的模型继续训练 (修复了拼写错误)
+    # Optional: Load an existing model to resume training (spelling mistake fixed)
     checkpoint_path = os.path.join(save_dir, 'checkpoint.pth.tar')
     if os.path.exists(checkpoint_path):
         print(f'==> Resuming from checkpoint: {checkpoint_path}')
@@ -116,14 +116,14 @@ def main(args):
         optimizer.load_state_dict(model_info['optimizer'])
         cur_epoch = model_info['epoch'] + 1
 
-    # 7. 训练与验证循环
+    # 7. Training and validation loop
     for epoch in range(cur_epoch, args.epochs):
-        # --- 训练 ---
+        # --- Training ---
         net.train()
         train_losses = []
         train_pbar = tqdm(train_loader, desc=f"Epoch {epoch}/{args.epochs} [Train]")
         for _, inputs, label in train_pbar:
-            # 关键修改：将数据发送到设备
+            # Key change: send data to the device
             inputs = inputs.to(device)  # B,S,C,H,W
             label = label.to(device)   # B,S,C,H,W
 
@@ -131,7 +131,7 @@ def main(args):
             pred = net(inputs)
             loss = loss_function(pred, label)
             
-            # 修正：loss.item() 已经是平均后的值，无需再除以batch_size
+            # Correction: loss.item() is already the averaged value, no need to divide by batch_size again
             train_losses.append(loss.item())
             
             loss.backward()
@@ -143,7 +143,7 @@ def main(args):
         avg_train_loss = np.mean(train_losses)
         tb.add_scalar('Loss/Train', avg_train_loss, epoch)
 
-        # --- 验证 ---
+        # --- Validation ---
         net.eval()
         valid_losses = []
         valid_pbar = tqdm(valid_loader, desc=f"Epoch {epoch}/{args.epochs} [Valid]")
@@ -163,10 +163,10 @@ def main(args):
         
         print(f"Epoch {epoch}: Avg Train Loss: {avg_train_loss:.6f}, Avg Valid Loss: {avg_valid_loss:.6f}")
 
-        # 更新学习率
+        # Update learning rate
         pla_lr_scheduler.step(avg_valid_loss)
 
-        # 早停检查
+        # Early stopping check
         model_dict = {
             'epoch': epoch,
             'state_dict': net.state_dict(),
@@ -184,7 +184,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Spatio-Temporal Prediction Model Training")
     
-    # 模型与训练参数
+    # Model and training parameters
     parser.add_argument('--convlstm', action='store_true', help='Use ConvLSTM as the base cell.')
     parser.add_argument('--convgru', action='store_true', help='Use ConvGRU as the base cell (default).')
     parser.add_argument('--batch_size', default=5, type=int, help='Mini-batch size.')
@@ -192,17 +192,17 @@ if __name__ == "__main__":
     parser.add_argument('--lr', default=1e-3, type=float, help='Learning rate.')
     parser.add_argument('--lambda_grad', default=0.2, type=float, help='Weight for the gradient loss term in HybridLoss.')
     
-    # 数据参数
+    # Data parameters
     parser.add_argument('--frames_input', default=6, type=int, help='Number of input frames.')
     parser.add_argument('--frames_output', default=6, type=int, help='Number of output frames to predict.')
     
-    # 系统参数
+    # System parameters
     parser.add_argument('--num_workers', default=4, type=int, help='Number of worker threads for DataLoader.')
     parser.add_argument('--gpu_id', default=0, type=int, help='ID of the GPU to use if CUDA is available.')
 
     args = parser.parse_args()
 
-    # 如果两者都未指定，则默认使用 ConvGRU
+    # If neither is specified, default to using ConvGRU
     if not args.convlstm and not args.convgru:
         args.convgru = True
         print("No model type specified, defaulting to ConvGRU.")
